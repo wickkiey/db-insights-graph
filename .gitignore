@@ -19,6 +19,9 @@ env/
 *.sqlite3
 *.db
 
+# Cached schema snapshots
+schema_cache/
+
 # Editor/OS
 .vscode/
 .idea/

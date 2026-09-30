@@ -42,3 +42,20 @@ docker run -p 8501:8501 -v "${PWD}:/data" dbgraph "sqlite:////data/mydb.sqlite"
 Then open http://localhost:8501. If no connection string is supplied, the app
 starts with an empty sidebar and you can enter one manually.
 
+## Caching a reflected schema
+
+Enter a **Schema name** in the sidebar alongside the connection string. On
+Connect, if a saved copy with that name already exists it's loaded from disk
+instead of re-querying the database; otherwise it's reflected once and saved.
+Use **Refresh from database** to force a fresh reflect and overwrite the saved
+copy. Previously saved schemas also show up in a **Saved schemas** picker so
+you can reopen them later without a connection string (sample rows need a live
+connection, though).
+
+Mount a host folder at `/app/schema_cache` so saved schemas survive container
+restarts:
+
+```powershell
+docker run -p 8501:8501 -v "${PWD}/schema_cache:/app/schema_cache" dbgraph "postgresql+psycopg2://user:pass@host:5432/db"
+```
+

@@ -31,6 +31,9 @@ COPY . .
 
 RUN chmod +x /app/entrypoint.sh
 
+ENV SCHEMA_CACHE_DIR=/app/schema_cache
+VOLUME ["/app/schema_cache"]
+
 EXPOSE 8501
 
 ENTRYPOINT ["/app/entrypoint.sh"]
