@@ -2,7 +2,9 @@ streamlit
 sqlalchemy>=2.0
 networkx
 
-# Install a driver for your target dialect, e.g.:
-# psycopg2-binary   # PostgreSQL
-# pymysql           # MySQL
+# Drivers for common dialects — all bundled in the Docker image (see Dockerfile).
+# Installing locally without Docker? Only install the ones you need:
+psycopg2-binary   # PostgreSQL
+pymysql           # MySQL
+pyodbc            # SQL Server (also requires the msodbcsql18 system driver, see Dockerfile)
 # (SQLite ships with Python's standard library, no driver needed)

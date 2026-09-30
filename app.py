@@ -1,6 +1,8 @@
 """Streamlit app: connect to any SQLAlchemy DB, explore its schema graph, export for LLMs."""
 from __future__ import annotations
 
+import os
+
 import streamlit as st
 from sqlalchemy.engine.url import make_url
 
@@ -16,28 +18,44 @@ if "tables" not in st.session_state:
     st.session_state.tables = None
     st.session_state.engine = None
     st.session_state.selected_node = None
+    st.session_state.auto_connect_attempted = False
+
+# Allow the connection string to be provided via env var (e.g. set by the Docker
+# entrypoint from `docker run <image> "<connection string>"`) so the container can
+# auto-connect on first load without requiring manual input in the UI.
+env_connection_string = os.environ.get("DB_CONNECTION_STRING", "")
 
 with st.sidebar:
     st.header("Connection")
-    connection_string = st.text_input("SQLAlchemy connection string", type="password")
+    connection_string = st.text_input(
+        "SQLAlchemy connection string", value=env_connection_string, type="password"
+    )
     connect_clicked = st.button("Connect")
 
     st.header("Sample rows")
     show_samples = st.toggle("Fetch sample rows", value=True)
     sample_limit = st.number_input("Rows to fetch", min_value=1, max_value=100, value=5)
 
-if connect_clicked:
-    if not connection_string:
+auto_connect = (
+    not st.session_state.auto_connect_attempted
+    and env_connection_string
+    and st.session_state.tables is None
+)
+
+if connect_clicked or auto_connect:
+    st.session_state.auto_connect_attempted = True
+    active_connection_string = connection_string or env_connection_string
+    if not active_connection_string:
         st.sidebar.error("Enter a connection string first.")
     else:
         try:
-            engine = connect_engine(connection_string)
+            engine = connect_engine(active_connection_string)
             st.session_state.tables = reflect_all(engine)
             st.session_state.engine = engine
             st.session_state.selected_node = None
         except Exception as exc:
             # Never echo the raw connection string back — it may contain a password.
-            safe_url = make_url(connection_string).render_as_string(hide_password=True)
+            safe_url = make_url(active_connection_string).render_as_string(hide_password=True)
             st.sidebar.error(f"Failed to connect to {safe_url}: {exc}")
 
 tables: list[TableInfo] | None = st.session_state.tables
