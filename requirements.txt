@@ -1,0 +1,8 @@
+streamlit
+sqlalchemy>=2.0
+networkx
+
+# Install a driver for your target dialect, e.g.:
+# psycopg2-binary   # PostgreSQL
+# pymysql           # MySQL
+# (SQLite ships with Python's standard library, no driver needed)

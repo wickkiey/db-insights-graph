@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0e14; overflow: hidden; }
+  #graph { width: 100vw; height: 100vh; }
+  .scene-tooltip { font-family: -apple-system, Segoe UI, sans-serif; }
+</style>
+</head>
+<body>
+<div id="graph"></div>
+<script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+<script>
+(function () {
+  const RENDER_EVENT = "streamlit:render";
+  let graphInstance = null;
+
+  function postToStreamlit(type, data) {
+    window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type }, data), "*");
+  }
+
+  function setFrameHeight(height) {
+    postToStreamlit("streamlit:setFrameHeight", { height });
+  }
+
+  function setComponentValue(value) {
+    postToStreamlit("streamlit:setComponentValue", { value, dataType: "json" });
+  }
+
+  function buildGraph(nodes, links, height) {
+    const el = document.getElementById("graph");
+    el.style.height = height + "px";
+
+    if (!graphInstance) {
+      graphInstance = ForceGraph3D()(el)
+        .backgroundColor("#0b0e14")
+        .nodeLabel(n => `<div class="scene-tooltip"><b>${n.label || n.id}</b></div>`)
+        .nodeAutoColorBy("group")
+        .nodeOpacity(0.95)
+        .nodeResolution(16)
+        .linkDirectionalArrowLength(5)
+        .linkDirectionalArrowRelPos(1)
+        .linkCurvature(0.2)
+        .linkLabel(l => l.label || "")
+        .linkColor(() => "rgba(140,170,255,0.55)")
+        .linkWidth(1.1)
+        .onNodeClick(node => {
+          setComponentValue(node.id);
+          const distRatio = 1 + 60 / Math.hypot(node.x, node.y, node.z || 1);
+          graphInstance.cameraPosition(
+            { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+            node,
+            700
+          );
+        });
+    }
+
+    graphInstance.width(el.clientWidth || window.innerWidth).height(height);
+    graphInstance.graphData({ nodes, links });
+    setFrameHeight(height);
+  }
+
+  function onRender(event) {
+    if (!event.data || event.data.type !== RENDER_EVENT) return;
+    const args = event.data.args || {};
+    buildGraph(args.nodes || [], args.links || [], args.height || 650);
+  }
+
+  window.addEventListener("message", onRender);
+  window.addEventListener("resize", () => {
+    if (graphInstance) graphInstance.width(window.innerWidth);
+  });
+
+  postToStreamlit("streamlit:componentReady", { apiVersion: 1 });
+  setFrameHeight(650);
+})();
+</script>
+</body>
+</html>
